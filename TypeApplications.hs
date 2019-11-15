@@ -25,3 +25,11 @@ constInt3 = constM @_ @Int
 dig3 = constInt3 "ok" 12
 -- dig4 = constInt3 "notOK" "12"
 
+-- :t fmap @Maybe @Int @String
+-- fmap @Maybe @Int @String
+--  :: (Int -> String) -> Maybe Int -> Maybe String
+f1=fmap @Maybe @Int @String
+
+-- fmap :: Functor f => (a -> b) -> f a -> f b
+-- first paramerer of fmap is f but not (a->b),second parameter is a not (a->b)
+-- @ get parammerter in order in the type signature

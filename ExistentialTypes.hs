@@ -46,7 +46,7 @@ elimHasShow f (HasShow a) = f a
 instance Show HasShow where
   show hs = elimHasShow show hs
 
-
+-- when t converto Dynamic, its complete info is not lost, just hidden beneath Dynamic
 data Dynamic where
   Dynamic :: Typeable t => t -> Dynamic
 
@@ -57,6 +57,15 @@ elimDynamic f (Dynamic a) = f a
 
 fromDynamic :: Typeable a => Dynamic -> Maybe a
 fromDynamic = elimDynamic cast
+
+-- every new conception, should compose some cases by your own grep to verify if your understanding to them is right  
+a = Dynamic (12 :: Float)
+
+-- Nothing
+b = fromDynamic a :: Maybe Double
+
+-- Just 12.0
+c = fromDynamic a :: Maybe Float
 
 liftD2 :: forall a b r.
   ( Typeable a
@@ -70,7 +79,7 @@ liftD2 :: forall a b r.
 
 liftD2 d1 d2 f =
   fmap Dynamic . f -- (Dynamic .) . f also works
-  <$> fromDynamic @a d1
+  <$> fromDynamic @a d1 -- TypeApplications,specify first parameter 'a' of type signature of fromDynamic must be type a here
   <*> fromDynamic @b d2
 
 pyPlus :: Dynamic -> Dynamic -> Dynamic
@@ -96,3 +105,9 @@ elimHas
   -> r
 
 elimHas f (Has a) = f a
+
+type ZhenShu = Int
+
+type HasShow2 = Has Show
+type Dynamic2 = Has Typeable
+
