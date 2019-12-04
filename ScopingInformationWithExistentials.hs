@@ -7,6 +7,7 @@ import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Typeable
 import Control.Monad.Trans
+import System.IO
 newtype ST s a = ST
   {
     unsafeRunST :: a
@@ -43,7 +44,12 @@ instance Monad (ST s) where
 -- ($!) :: (a -> b) -> a -> b
 -- f $! x = x `seq` f x
 
-
+instance MonadIO (ST s) where
+  liftIO ioa  = do
+    pure ioa
+    pure $ unsafePerformIO ioa
+    
+     
 newtype STRef s a = STRef
 --s acts as a label irrevocably knotting a STRef with the ST context that created it
 -- ie.: ST s (STRef s a)
@@ -96,18 +102,31 @@ stSTRiRigid  = newSTRef 12 :: ST String (STRef String Integer) -- must sepify ex
 rStSTRiRigid = readSTRef . unsafeRunST $ stSTRiRigid -- :: ST s Integer
 modifiedAinSTRefRigid :: IO ()
 modifiedAinSTRefRigid = print  modifyV >> print typeModifyV >> print typeSTRef where
-  modify = (flip modifySTRef (+18) . unsafeRunST $ stSTRiRigid)  >> rStSTRiRigid
-  typeSTRef = typeOf modify
+  modifyRead = (flip modifySTRef (+18) . unsafeRunST $ stSTRiRigid)  >> rStSTRiRigid
+  typeSTRef = typeOf modifyRead
   typeModifyV = typeOf modifyV
-  modifyV = unsafeRunST modify
+  modifyV = unsafeRunST modifyRead
 
--- liftModifiedAinSTRefRigid :: IO ()
--- liftModifiedAinSTRefRigid =  (modify `lift` print typeModifyV) >> print typeSTRef where
---   modify = (flip modifySTRef (+18) . unsafeRunST $ stSTRiRigid)  >> rStSTRiRigid
---   typeSTRef = typeOf modify
---   typeModifyV = typeOf modifyV
---   modifyV = unsafeRunST modify
+
+opFile str = do
+  writeFile "/home/kyle/Haskell/file.txt" str
+
+-- modifySTRef :: STRef s a -> (a -> a) -> ST s ()
+liftModifiedAinSTRefRigid ::   ST String  ()
+liftModifiedAinSTRefRigid =  stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> ( liftIO . opFile . show . unsafeRunST)  rStSTRiRigid  where
+  modify = flip modifySTRef (+18)
+  readRef = readSTRef . unsafeRunST
+  -- typeSTRef = typeOf modify
+  -- typeModifyV = typeOf modifyV
+  -- modifyV = unsafeRunST modify
 
 -- modifiedAinSTRefRigid
 -- 30
 -- ST [Char] Integer
+main :: IO ()
+main = do
+  return $ unsafeRunST liftModifiedAinSTRefRigid -- file saving no effect
+  print $ unsafeRunST liftModifiedAinSTRefRigid -- file saving take effct, but only after  execution of main in the first time
+  -- return ( stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> ( liftIO . writeFile "/home/kyle/Haskell/file.txt" . show . unsafeRunST)  rStSTRiRigid) >> return () where
+  --   modify = flip modifySTRef (+18)
+  --   readRef = readSTRef . unsafeRunST
