@@ -113,7 +113,8 @@ opFile str = do
 
 -- modifySTRef :: STRef s a -> (a -> a) -> ST s ()
 liftModifiedAinSTRefRigid ::   ST String  ()
-liftModifiedAinSTRefRigid =  stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> ( liftIO . opFile . show . unsafeRunST)  rStSTRiRigid  where
+liftModifiedAinSTRefRigid =  stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> ( liftIO . print . show . unsafeRunST)  rStSTRiRigid  where -- replace opFile with print ,same phnomenon
+--liftModifiedAinSTRefRigid =  stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> seq <$>  ( liftIO . print) <*> (liftIO . opFile)  $ (show . unsafeRunST)  rStSTRiRigid  where
   modify = flip modifySTRef (+18)
   readRef = readSTRef . unsafeRunST
   -- typeSTRef = typeOf modify
@@ -123,10 +124,30 @@ liftModifiedAinSTRefRigid =  stSTRiRigid >>= modify >> stSTRiRigid >>= modify >>
 -- modifiedAinSTRefRigid
 -- 30
 -- ST [Char] Integer
+
+safeExample :: ST s String
+safeExample = do
+  ref <- newSTRef "hello"
+  modifySTRef ref (++ " world")
+  readSTRef ref
+
 main :: IO ()
 main = do
   return $ unsafeRunST liftModifiedAinSTRefRigid -- file saving no effect
-  print $ unsafeRunST liftModifiedAinSTRefRigid -- file saving take effct, but only after  execution of main in the first time
-  -- return ( stSTRiRigid >>= modify >> stSTRiRigid >>= modify >> ( liftIO . writeFile "/home/kyle/Haskell/file.txt" . show . unsafeRunST)  rStSTRiRigid) >> return () where
-  --   modify = flip modifySTRef (+18)
-  --   readRef = readSTRef . unsafeRunST
+  print $ unsafeRunST liftModifiedAinSTRefRigid
+  print $ unsafeRunST safeExample
+  -- file saving take effct, but only after  execution of main in the first time, should it because the variable just be evaluated once when required, so IO here takes effect only once?
+
+-- :t runST
+-- runST :: (forall s. ST s a) -> a
+-- :t unsafeRunST
+-- unsafeRunST :: ST s a -> a
+-- let a = runST (newSTRef True) -- would not pass
+  let b= unsafeRunST (newSTRef True) -- pass
+  return ()
+
+-- main
+--"48"
+-- ()
+-- main
+-- ()
