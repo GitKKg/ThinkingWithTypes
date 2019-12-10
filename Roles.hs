@@ -28,8 +28,8 @@ ea = Left 12 :: Either Integer Integer
 esa = Left (Sum 12) :: Either (Sum Integer) Integer
 
 esaea = coerce ea :: Either Integer Integer
-sa = coerce ea :: Either (Sum Integer) String -- pass
--- so ,seem a of Either a is represtational role
+-- sa = coerce ea :: Either (Sum Integer) String -- not pass
+-- so ,seem a of Either a is nominal role
 
 esb = Right  12 :: Either (Sum Integer) Integer
 
