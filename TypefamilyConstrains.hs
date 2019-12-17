@@ -18,12 +18,13 @@ import Data.Kind (Constraint, Type)
 
 data HList (ts :: [Type]) where
   HNil :: HList '[]
-  (:#) :: t -> HList ts -> HList (t ': ts)
-infixr 5 :#
+  --(:#) :: t -> HList ts -> HList (t ': ts)
+  Link :: t -> HList ts -> HList (t ': ts)
+infixr 5 `Link` -- :#
 
 hLength :: HList ts -> Int
 hLength HNil = 0
-hLength (_ :# ts) = 1 + hLength ts
+hLength (_ `Link` ts) = 1 + hLength ts
 
 -- type family AllEq (ts :: [Type]) :: Constraint where
 --   AllEq '[] = ()
@@ -35,16 +36,19 @@ type family All (c :: Type -> Constraint) (ts :: [Type]) :: Constraint where
 
 instance All Eq ts => Eq (HList ts) where
   HNil == HNil = True
-  (a :# as) == (b :# bs) = a == b && as == bs
+  (a `Link` as) == (b `Link` bs) = a == b && as == bs
 
 
 instance (All Ord ts,All Eq ts) => Ord (HList ts) where
   HNil <= HNil = True
-  (a :# as) <= (b :# bs) = a<=b || as <= bs
+  (a `Link` as) <= (b `Link` bs) = a<=b || as <= bs
 
 instance All Show ts => Show (HList ts) where
   show HNil = "HNil"
-  show (a :# as) = show a ++ " :# " ++ show as
+  show (a `Link` as) = show a ++ " Link " ++ show as
 
-ahlist = 12 :# "ok" :# [1,2] :# HNil
+ahlist = 12 `Link` "ok" `Link` [1,2] `Link` HNil
 
+--headss ::  HList aas -> (forall a. a =>a )
+
+--headss (a `Link` as ) = a

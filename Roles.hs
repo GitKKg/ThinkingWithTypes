@@ -65,3 +65,10 @@ ap = coerce pa :: Proxy String -- pass
 type family IntToBool a where
   IntToBool Int = Bool
   IntToBool a = a
+
+data BST v
+  = Empty
+  | Branch (BST v) v (BST v)
+
+
+type role BST nominal -- v now is nominal
