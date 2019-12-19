@@ -51,17 +51,47 @@ tailL (h `Link` hs) = hs -- pass,for hs is always of type LinkD here
 
 class HasPrintf a where
   type Printf a :: Type -- every instance must provide an associated type Printf a
+  format :: String -> Proxy a -> Printf a
 
-instance HasPrintf (text :: Symbol) where
+-- some analogy for class
+-- class Show a where
+--   showsPrec :: Int -> a -> ShowS
+--   show :: a -> String
+--   showList :: [a] -> ShowS
+--   {-# MINIMAL showsPrec | show #-}
+
+instance KnownSymbol text => HasPrintf (text :: Symbol) where
   type Printf text = String
+  format s _ = s <> symbolVal (Proxy @text)
+-- "!" is text
 
-instance HasPrintf a => HasPrintf ((text :: Symbol) :<< a) where
+instance (KnownSymbol text , HasPrintf a) => HasPrintf ((text :: Symbol) :<< a) where
   type Printf (text :<< a) = Printf a
+  format s _ = format (s <> symbolVal (Proxy @text)) (Proxy @a)
+-- (":" :<< Bool :<< "!")  ":" is text, Bool :<< "!" is a
 
-instance HasPrintf a => HasPrintf ((param :: Type) :<< a) where
+instance (HasPrintf a, Show param) => HasPrintf ((param :: Type) :<< a) where
   type Printf (param :<< a) = param -> Printf a
+  format s _ param = format (s <> show param) (Proxy @a)
+
+printf :: HasPrintf a => Proxy a -> Printf a
+printf = format ""
+
+
+-- (Int :<< ":" :<< Bool :<< "!") Int is param, ":" :<< Bool :<< "!" is a
 
 -- some analogy
 type ZhenShu = Int
 type MayInt = Maybe Int
 type May a = Maybe a
+
+-- test in lanmbda command line
+-- :set -XDataKinds
+-- :set -XTypeOperators
+-- :kind! Printf ( Int :<< ":" :<< Bool :<< "!")
+-- Printf ( Int :<< ":" :<< Bool :<< "!") :: *
+-- = Int -> Bool -> String
+
+-- :set -XTypeApplications
+-- printf ( Proxy @( Int :<< "+" :<< Int :<< "=3") ) 1 2
+-- "1+2=3"

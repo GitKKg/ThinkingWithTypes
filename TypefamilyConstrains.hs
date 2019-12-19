@@ -46,6 +46,7 @@ instance (All Ord ts,All Eq ts) => Ord (HList ts) where
 instance All Show ts => Show (HList ts) where
   show HNil = "HNil"
   show (a `Link` as) = show a ++ " Link " ++ show as
+-- a here is of type Constrain Show, so a is could be referred with show a, or say, a here gets a type, refer to tailL in BuidldingTypesFromSchema.hs
 
 ahlist = 12 `Link` "ok" `Link` [1,2] `Link` HNil
 
