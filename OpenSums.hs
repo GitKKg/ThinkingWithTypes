@@ -37,11 +37,11 @@ aOpenSum2 = UnsafeOpenSum @Maybe @Int @'[Int,Bool] 3 (Just (12 :: Int) )
 aOpenSum21 = UnsafeOpenSum @Maybe @_ @'[Int,Bool] 3 (Just (12 :: Int) )
 
 aOpenSum3 = UnsafeOpenSum @[] @Int @'[Int,Bool] 4 [15,12]
--- f is [], t is Int,
+-- f is [], t is Int,ts is '[Int,Bool]
 
 aOpenSum0 = UnsafeOpenSum @[] @Int  @'[Int,Bool]  0 [16,12]
 
--- f is [] :: * -> * (be able to be Type) , k is Int
+-- f is [] :: * -> * (be able to be Type) , k is Type too, ts is '[Int,Bool]
 
 -- =<< like fmap
 -- return Index or Nothing
@@ -87,7 +87,7 @@ pp = prj @[] @Int @'[Int,Bool] aOpenSum3
 
 pp0 = prj @[] @Int @'[Int,Bool] aOpenSum0
 -- Just [16,12], i and real index be found both are 0 
-  
+
 decompose :: OpenSum f (t ': ts) -> Either (f t) (OpenSum f ts)
 decompose (UnsafeOpenSum 0 t) = Left $ unsafeCoerce t
 decompose (UnsafeOpenSum n t) = Right $ UnsafeOpenSum (n - 1) t
@@ -114,4 +114,3 @@ dnt = decompose nt
 
 match :: forall f ts b. (forall t. f t -> b) -> OpenSum f ts -> b
 match fn (UnsafeOpenSum _ t) = fn t
-
