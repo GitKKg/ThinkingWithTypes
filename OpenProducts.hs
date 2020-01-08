@@ -17,7 +17,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Haskell.ThinkingWithTypes.OpenProducts where
-
+import Data.Coerce (Coercible(..), coerce)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import qualified Data.Vector as V
@@ -173,22 +173,51 @@ delete _ ft (OpenProduct v) =
   vg = V.splitAt (findElem @key @ts) v
 
 
-type family GetIndex (k :: Symbol) (ts :: [(Symbol , val)]) :: Maybe Nat
-type instance  GetIndex  key  ts = If (Eval (UniqueKey key ts))  (Just (FindElem key ts))  Nothing
+-- type family GetIndex (k :: Symbol) (ts :: [(Symbol , val)]) :: Maybe Nat
+type  GetIndex  key  ts = If (Eval (UniqueKey key ts)) Nothing  (Just (FindElem key ts))
 --type  GetIndex  key  ts = If (Eval (UniqueKey key ts))  ('Just  (FindElem key ts)) 'Nothing
+-- :kind! GetIndex "hi" '[ '( "what" ,8  ), '("hi",12) ]
+-- GetIndex "hi" '[ '( "what" ,8  ), '("hi",12) ] :: Maybe Nat
+-- = 'Just 1
 
+-- cp from monadplus in Github, just misundetstand what kind to term-level means
+-- Lower the kind to the term-level
+-- use class to conver kind,type level to term in type
+class FindUpsertElem (a :: Maybe Nat) where -- class could accept kind as parameter, just try to remember it just class do ,it just a Consraint
+  upsertElem :: Maybe Int
+-- :k FindUpsertElem
+-- FindUpsertElem :: Maybe Nat -> Constraint
 
-class Upsertable  gi ft  where
-  upsert :: gi -> f t -> OpenProduct f ts -> OpenProduct f (Eval (UpdateElem key t ts))
+instance FindUpsertElem 'Nothing where -- instance could accept different type parameters explicitily and directly
+  upsertElem = Nothing
+instance KnownNat nat => FindUpsertElem ('Just nat) where -- instance could accept different type parameters explicitily and directly
+  upsertElem = Just (fromIntegral $ natVal (Proxy @nat))
 
--- only function in class instance could accept same parameter with different types explicitly
-instance Upsertable (Maybe Nat) ft where
-  upsert Nothing ft opv = undefined
-  upsert (Just index) ft opv = undefined -- update _ ft (OpenProduct v) -- OpenProduct $ opv V.// index
+-- Recompute ts
+type UpsertElem (key :: Symbol) (t :: k) (ts :: [(Symbol, k)])
+ = FromMaybe ('(key, t) ': ts)
+   =<< Map (SetIndex2 '(key, t) ts)
+   =<< FindIndex (TyEq key <=< Fst) ts
+-- FindIndex :: (a -> Exp Bool) -> [a] -> Exp (Maybe Nat)
+-- data (=<<) :: (a -> Exp b) -> Exp a -> Exp b infixr 1 
+-- data (<=<) :: (b -> Exp c) -> (a -> Exp b) -> a -> Exp c infixr 1, no deshell at first,but deshell at the second step
+-- Map :: (a -> Exp b) -> f a -> Exp (f b)
+-- FromMaybe :: k -> Maybe k -> Exp k
 
--- upsert :: Key key
---   -> f t
---   -> OpenProduct f ts
---   -> OpenProduct f (Eval (UpdateElem key t ts))
--- upsert = undefined
+-- Same as SetIndex but with reversed arguments.
+data SetIndex2 :: a -> [a] -> Nat -> Exp [a]
+type instance Eval (SetIndex2 a' as n) = SetIndexImpl n a' as
+-- SetIndexImpl here is just off the book, type family in Fcf
+-- SetIndexImpl :: Nat -> k -> [k] -> [k]
 
+upsert
+  :: forall key ts t f
+   . FindUpsertElem (GetIndex key ts)
+  => Key key
+  -> f t
+  -> OpenProduct f ts
+  -> OpenProduct f (Eval (UpsertElem key t ts))
+upsert _ ft (OpenProduct v) =
+  OpenProduct $ case upsertElem @(GetIndex key ts) of
+    Nothing -> V.cons (Any ft) v
+    Just i  -> v V.// [(i, Any ft)]

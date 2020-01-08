@@ -25,7 +25,7 @@ data Pure :: a -> Exp a
 type instance Eval (Pure x) = x
 
 -- {-# LANGUAGE TypeOperators #-}
--- just like function application ($) at the type level
+-- just like monad operation =<< in type level, deshell to enter function
 -- =< means enter the shell, < means call function ,input to output
 data (=<<) :: (a -> Exp b) -> Exp a -> Exp b 
 type instance Eval (k =<< e) = Eval (k (Eval e))
