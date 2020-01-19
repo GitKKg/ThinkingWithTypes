@@ -221,3 +221,13 @@ upsert _ ft (OpenProduct v) =
   OpenProduct $ case upsertElem @(GetIndex key ts) of
     Nothing -> V.cons (Any ft) v
     Just i  -> v V.// [(i, Any ft)]
+
+-- :set -XTypeApplications
+-- :set -XOverloadedLabels
+--  :t #foo
+-- #foo :: IsLabel "foo" t => t
+--  :t fromLabel @"foo"
+-- fromLabel @"foo" :: IsLabel "foo" a => a
+
+instance (key ~ key') => IsLabel key (Key key') where
+  fromLabel = Key
